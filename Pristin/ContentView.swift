@@ -32,7 +32,6 @@ struct ContentView: View {
                 
                 DispatchQueue.global(qos: .userInitiated).async {
                     let result = SystemScanner.checkNodeVersion()
-                    
                     DispatchQueue.main.async {
                         self.scanResult = result
                         self.isScanning = false
