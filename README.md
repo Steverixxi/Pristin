@@ -1,7 +1,4 @@
 # Pristin
 
-A macOS storage manager application for finding/managing/deleting installed packages, libraries and programs, including UNIX-Style libraries and frameworks.
-
-## Features
-
-WIP
+A powerful macOS storage manager designed to locate, manage, and safely remove installed packages, libraries, and applications (including deep-system UNIX-style libraries and frameworks).
+Pristin's ultimate goal is to theoretically restore your system to a pristine, "macOS-Sandboxed" state, ensuring no leftover software or stray files remain outside the official App Store Sandbox environment.
