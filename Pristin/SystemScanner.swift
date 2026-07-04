@@ -8,7 +8,6 @@ import Security
 
 class SystemScanner {
     
-    // MARK: - Shell Execution
     static func runShellCommand(executablePath: String, arguments: [String]) -> String {
         let process = Process()
         let pipe = Pipe()
@@ -33,7 +32,6 @@ class SystemScanner {
         return "No output received."
     }
     
-    // MARK: - Code Signature Check
     static func isAppleSigned(path: String) -> Bool {
         let url = URL(fileURLWithPath: path)
         var staticCode: SecStaticCode?
@@ -44,8 +42,6 @@ class SystemScanner {
         }
         
         var requirement: SecRequirement?
-        // WICHTIG: "anchor apple" verlangt native macOS-Komponenten.
-        // "anchor apple generic" würde auch Drittanbieter (Spotify etc.) einschließen!
         guard SecRequirementCreateWithString("anchor apple" as CFString, SecCSFlags(rawValue: 0), &requirement) == errSecSuccess,
               let req = requirement else {
             return false
@@ -55,7 +51,6 @@ class SystemScanner {
         return status == errSecSuccess
     }
     
-    // MARK: - Core Scanner
     static func scanComprehensiveSystem() -> [SystemApp] {
         var detectedApps: [UUID: SystemApp] = [:]
         
