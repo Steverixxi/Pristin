@@ -64,7 +64,7 @@ class SystemScanner {
             "Mono": ["mono", "monodis", "mcs", ".mono"],
 
             "Visual Studio Code": ["vscode", "code", "vscode-shared", "csdevkit", "copilot"],
-            "Unity 3D": ["unity", "unityhub", "plastic4"],
+            "Unity 3D": ["unity", "unityhub", "plastic4", "unityhub-updater"],
             "Xcode & Apple Dev": ["xcode", "coresimulator", "proapps", "script editor"],
 
             "Homebrew": ["brew", "Cellar", "Caskroom", "homebrew"],
@@ -115,9 +115,12 @@ class SystemScanner {
 
         let userLibraryLocations = [
             homeDir + "/.config",
+            homeDir + "/.local",
+            homeDir + "/.local/bin",
             homeDir + "/Library/Application Support",
             homeDir + "/Library/Caches",
-            homeDir + "/Library/Logs"
+            homeDir + "/Library/Logs",
+            homeDir + "/Library/Preferences"
         ]
 
         let appBundleRoots = [
