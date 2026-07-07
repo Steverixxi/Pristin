@@ -45,6 +45,18 @@ class SystemScanner {
         let status = SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSCheckAllArchitectures), req)
         return status == errSecSuccess
     }
+    
+    static func stripFileExtensions(from name: String) -> String {
+        let extensionsToStrip = [".plist", ".bom", ".log", ".savedState", ".sock", ".pid", ".conf", ".db", ".sqlite", ".json", ".tar", ".gz", ".zip"]
+        var cleaned = name
+        
+        for ext in extensionsToStrip {
+            if cleaned.lowercased().hasSuffix(ext) {
+                cleaned = String(cleaned.dropLast(ext.count))
+            }
+        }
+        return cleaned
+    }
 
     static func scanComprehensiveSystem() -> [SystemApp] {
         var detectedApps: [UUID: SystemApp] = [:]
@@ -63,8 +75,10 @@ class SystemScanner {
             "C/C++": ["gcc", "g++", "clang", "clang++", "cmake", "make", "gdb", "lldb"],
             "Mono": ["mono", "monodis", "mcs", ".mono"],
 
-            "Visual Studio Code": ["vscode", "code", "vscode-shared", "csdevkit", "copilot"],
-            "Unity 3D": ["unity", "unityhub", "plastic4", "unityhub-updater"],
+            "Visual Studio Code": ["vscode", "code", "vscode-shared", "csdevkit", "copilot", "servicehub"],
+            "Unity 3D": [
+                "unity", "unity3d", "unityhub", "unityeditor", "unityeditor5", "plastic4", "unityhub-updater"
+            ],
             "Xcode & Apple Dev": ["xcode", "coresimulator", "proapps", "script editor"],
 
             "Homebrew": ["brew", "Cellar", "Caskroom", "homebrew"],
@@ -79,7 +93,6 @@ class SystemScanner {
             "MySQL / MariaDB": ["mysql", "mysqld", "mariadb", "mysqladmin", ".mysql_history"],
             "MongoDB": ["mongo", "mongod", "mongos", "mongosh", ".mongodb"],
             "Redis": ["redis-server", "redis-cli", "redis"],
-            "SQLite": ["sqlite", "sqlite3"],
             "Docker": ["docker", "docker-compose", ".docker", "com.docker.docker", "docker-credential"],
             "AWS CLI": ["aws", ".aws", "aws-cli", "eb", "sam"],
             "Google Cloud SDK": ["gcloud", "gsutil", "bq", ".config/gcloud"],
@@ -99,7 +112,11 @@ class SystemScanner {
             "Wget": ["wget", ".wget-hsts"],
             "GnuPG": ["gpg", "gpg-agent", ".gnupg", "gpg2"],
             "SSH": ["ssh", "sshd", ".ssh", "ssh-keygen", "ssh-agent"],
-            "Zsh / Bash": ["zsh", "bash", ".zshrc", ".bash_profile", ".bashrc", ".zprofile", "zplug", "oh-my-zsh"]
+            "Zsh / Bash": ["zsh", "bash", ".zshrc", ".bash_profile", ".bashrc", ".zprofile", "zplug", "oh-my-zsh"],
+            "Branch.io Analytics": ["branch", "io.branch"],
+            
+            "Nextcloud": ["nextcloud", "nkujuxuj3b", "desktopclient"],
+            "WhatsApp": ["whatsapp", "whatsappsmb", "waappkitbridgeservice", "whatsapp-desktop", "whatsapp-web"]
         ]
 
         let homeDir = NSHomeDirectory()
@@ -111,7 +128,6 @@ class SystemScanner {
             "/Library/Application Support",
             "/Library/Caches",
             "/Library/Logs",
-            "/Library/Extensions",
             "/Library/Audio/Plug-Ins",
             "/Library/Internet Plug-Ins",
             "/Library/PreferencePanes",
@@ -151,8 +167,7 @@ class SystemScanner {
 
         let fileManager = FileManager.default
         var rawItemsToCluster: [String] = []
-        
-        // add dynamic temp path if available
+
         let tempDir = NSTemporaryDirectory()
         let varCacheDir = URL(fileURLWithPath: tempDir).deletingLastPathComponent().deletingLastPathComponent().path
         if fileManager.fileExists(atPath: varCacheDir) {
@@ -171,45 +186,40 @@ class SystemScanner {
             "doc", "man", "local", "shared", "info", "libexec", "tipsd", "contactsd",
             "CFUserTextEncoding", "ControlCenter", "FileProvider", "CallHistoryDB", "CallHistoryTransactions", "AppAnalytics", "icloudmailagent",
             "SiriTTSService", "identityservicesd", "GameKit", "FamilyCircle", "familycircled", "DiskImages", "askpermissiond", "MobileSync",
-            "appplaceholdersyncd",
-            "ARFileCache",
-            "Assistant",
-            "Baseband",
-            "DifferentialPrivacy",
-            "features_config",
-            "GeoServices",
-            "homeenergyd",
-            "icdd",
-            "iPad Updater Logs",
-            "JetPackCache",
-            "Knowledge",
-            "locationaccessstored",
-            "LSMImageCache",
-            "mbuseragent",
-            "networkserviceproxy",
-            "PassKit",
-            "PrivacyPreservingMeasurement",
-            "SharedImageCache",
-            "SyncServices",
-            "TrickPlay",
-            "tvapp_bag",
-            "WindowServer",
-            "ColorSync",
-            "BTServer",
-            "Xsan",
-            "livefsd",
-            "hidfw-crashlogs",
-            "iLifeMediaBrowser",
-            "Desktop Pictures",
-            "Apple",
-            "loginwindow.plist",
-            "loginwindow", "ByHost", "Desktop Pictures", "Preferences",
-            "com.apple", "CloudStorage", "Mobile Documents",
-            "QuickLook", "Saved Application State", "WebKit", "HTTPStorages",
-            "ScreenSharing", "Bluetooth", "Audio", "Input Methods", "Keychains",
-            "LanguageModeling", "PersonalizationPortrait", "Metadata",
-            "Spelling", "TCC", "Autosave Information"
+            "appplaceholdersyncd", "ARFileCache", "Assistant", "Baseband", "DifferentialPrivacy", "features_config", "GeoServices",
+            "homeenergyd", "icdd", "iPad Updater Logs", "JetPackCache", "Knowledge", "locationaccessstored", "LSMImageCache",
+            "mbuseragent", "networkserviceproxy", "PassKit", "PrivacyPreservingMeasurement", "SharedImageCache", "SyncServices",
+            "TrickPlay", "tvapp_bag", "WindowServer", "ColorSync", "BTServer", "Xsan", "livefsd", "hidfw-crashlogs",
+            "iLifeMediaBrowser", "Desktop Pictures", "Apple", "loginwindow.plist", "loginwindow", "ByHost", "Desktop Pictures",
+            "com.apple", "CloudStorage", "Mobile Documents", "QuickLook", "Saved Application State", "WebKit", "HTTPStorages",
+            "ScreenSharing", "Bluetooth", "Audio", "Input Methods", "Keychains", "LanguageModeling", "PersonalizationPortrait",
+            "Metadata", "Spelling", "TCC", "Autosave Information",
+            
+            // System-Strukturdateien und Native Apple-Dienste
+            ".GlobalPreferences", "AMSDataMigratorTool", "Components", "ContextStoreAgent", "Databases",
+            "default.store", "default.store-wal", "default.store-shm", "DirectoryService", "DiscRecording",
+            "group.tvappservices.container", "HAL", "Logging", "MAS", "MCXTools", "MobileMeAccounts", "Music",
+            "OpenDirectory", "org.cups.printers", "pbs", "PhotosSearch", "PhotosUpgrade", "sharedfilelistd", "Sync",
+            "SystemConfiguration", "TokenBucketRateLimiter", "AOSUI", "MiniLauncher", "HighPointRR", "HighPointIOP",
+            "group.is.workflow.my.app", "group.is.workflow.shortcuts", ".zshrc", "zshrc"
         ]
+
+        let genericCoreWords: Set<String> = [
+            "app", "apps", "application", "helper", "helpers", "pro", "core",
+            "service", "services", "agent", "agents", "lib", "libs", "plugin",
+            "plugins", "extension", "extensions", "shared", "common", "main",
+            "daemon", "daemons", "framework", "frameworks", "runtime", "client",
+            "server", "utils", "util", "tools", "tool", "manager", "updater",
+            "update", "installer", "launcher", "worker", "resources", "resource",
+            "data", "config", "settings", "cache", "support", "sdk", "kit",
+            "engine", "component", "components", "bundle", "package", "module",
+            "com", "org", "net", "io", "co", "uk", "is", "group", "mac", "www",
+            "shared", "private", "container", "containers", "workspace", "groupcontainer", "sharedfile"
+        ]
+
+        func isUUID(_ string: String) -> Bool {
+            return UUID(uuidString: string) != nil
+        }
 
         func isBlacklisted(_ name: String) -> Bool {
             let lowerName = name.lowercased()
@@ -219,29 +229,68 @@ class SystemScanner {
             }
         }
 
-        func extractCoreName(from string: String) -> String {
-            let lower = string.lowercased()
-            let prefixes = ["com.", "org.", "net.", "io.", "co.", "uk.co."]
-            for prefix in prefixes {
-                if lower.hasPrefix(prefix) {
-                    let stripped = String(lower.dropFirst(prefix.count))
-                    return stripped.components(separatedBy: ".").first ?? stripped
-                }
-            }
-            return lower.components(separatedBy: ".").first ?? lower
+        func isDarwinHash(_ string: String) -> Bool {
+            return string.count == 30 && string.range(of: "^[a-z0-9]+$", options: .regularExpression) != nil
         }
 
-        let structuralFolders = ["bin", "share", "lib", "libexec"]
-
-        // Hilfsfunktion, um Code-Doppelung zu vermeiden
-        func addItemOrResolveStructural(_ item: String, in location: String) {
-            if isBlacklisted(item) { return }
+        func splitComponents(_ string: String) -> [String] {
+            return string
+                .lowercased()
+                .split(whereSeparator: { $0 == "." || $0 == "-" || $0 == "_" })
+                .map(String.init)
+        }
+        
+        func extractCoreName(from string: String) -> String {
+            let lower = string.lowercased()
+            let prefixes = [
+                "group.com.", "group.net.", "group.org.", "group.io.", "group.is.", "group.co.",
+                "uk.co.",
+                "com.", "org.", "net.", "io.", "co.", "app.", "me.", "dev.", "group."
+            ]
             
+            var remainder = lower
+            for prefix in prefixes {
+                if remainder.hasPrefix(prefix) {
+                    remainder = String(remainder.dropFirst(prefix.count))
+                    break
+                }
+            }
+
+            let comps = remainder.components(separatedBy: ".")
+
+            for comp in comps where comp.count >= 3 && !genericCoreWords.contains(comp) {
+                return comp
+            }
+
+            if let longest = comps.max(by: { $0.count < $1.count }), !longest.isEmpty {
+                return longest
+            }
+
+            return comps.first ?? remainder
+        }
+
+        let structuralFolders = ["bin", "share", "lib", "libexec", "vst", "vst3", "components", "audio", "plug-ins"]
+
+        func addItemOrResolveStructural(_ item: String, in location: String) {
+            if isBlacklisted(item) || isDarwinHash(item) { return }
+
+            if isUUID(item) {
+                let subLocation = "\(location)/\(item)"
+                if let subItems = try? fileManager.contentsOfDirectory(atPath: subLocation) {
+                    for subItem in subItems {
+                        if !isBlacklisted(subItem) && !isDarwinHash(subItem) && !rawItemsToCluster.contains(subItem) {
+                            rawItemsToCluster.append(subItem)
+                        }
+                    }
+                }
+                return
+            }
+
             if structuralFolders.contains(item.lowercased()) {
                 let subLocation = "\(location)/\(item)"
                 if let subItems = try? fileManager.contentsOfDirectory(atPath: subLocation) {
                     for subItem in subItems {
-                        if !isBlacklisted(subItem) && !rawItemsToCluster.contains(subItem) {
+                        if !isBlacklisted(subItem) && !isDarwinHash(subItem) && !rawItemsToCluster.contains(subItem) {
                             rawItemsToCluster.append(subItem)
                         }
                     }
@@ -257,7 +306,7 @@ class SystemScanner {
             guard let items = try? fileManager.contentsOfDirectory(atPath: location) else { continue }
             for item in items {
                 if item.hasPrefix(".") && !item.hasPrefix(".config") { continue }
-                
+
                 let fullPath = "\(location)/\(item)"
                 var isDir: ObjCBool = false
                 fileManager.fileExists(atPath: fullPath, isDirectory: &isDir)
@@ -273,9 +322,12 @@ class SystemScanner {
                 addItemOrResolveStructural(item, in: location)
             }
         }
+        
+        let dynamicUserFolderBlacklist = ["Nextcloud", "Dropbox", "OneDrive", "iCloudDrive"]
 
         if let homeItems = try? fileManager.contentsOfDirectory(atPath: homeDir) {
             for item in homeItems {
+                if dynamicUserFolderBlacklist.contains(item) { continue }
                 if item.hasPrefix(".") {
                     let cleanDot = item.replacingOccurrences(of: ".", with: "")
                     if isBlacklisted(cleanDot) { continue }
@@ -291,10 +343,10 @@ class SystemScanner {
         let allLocations = unixLocations + userLibraryLocations + [homeDir]
 
         for targetName in rawItemsToCluster {
-            if targetName.contains("com.apple") {
-                continue;
-            }
-            let cleanName = extractCoreName(from: targetName)
+            if targetName.contains("com.apple") || isDarwinHash(targetName) { continue }
+            
+            let normalizedTarget = stripFileExtensions(from: targetName)
+            let cleanName = extractCoreName(from: normalizedTarget)
 
             if cleanName.count < 3 && !knownRules.keys.contains(cleanName) { continue }
             if isBlacklisted(cleanName) { continue }
@@ -327,26 +379,30 @@ class SystemScanner {
             }
 
             let isKnown = (matchedName != nil)
-            let finalName = matchedName ?? targetName
+            let finalName = matchedName ?? normalizedTarget
             var associatedPaths: [String] = []
-
+            
             for location in allLocations {
                 guard let subItems = try? fileManager.contentsOfDirectory(atPath: location) else { continue }
                 for subItem in subItems {
-                    if isBlacklisted(subItem) { continue }
+                    if isBlacklisted(subItem) || isDarwinHash(subItem) { continue }
 
-                    let lowerSub = subItem.lowercased()
+                    let subComponents = splitComponents(subItem)
                     var isMatch = false
 
                     if let keywords = knownRules[matchedName ?? ""] {
                         for keyword in keywords {
-                            let kw = keyword.lowercased()
-                            if lowerSub == kw || lowerSub.hasPrefix("\(kw)-") || lowerSub.hasPrefix("com.\(kw)") || lowerSub.contains(".\(kw).") || lowerSub.hasPrefix(".\(kw)") || lowerSub.hasSuffix(".\(kw)") {
+                            let kwComponents = splitComponents(keyword)
+                            if let kw = kwComponents.first, kwComponents.count == 1 {
+                                if subComponents.contains(kw) {
+                                    isMatch = true; break
+                                }
+                            } else if subItem.lowercased().contains(keyword.lowercased()) {
                                 isMatch = true; break
                             }
                         }
                     } else {
-                        if lowerSub == lowerClean || lowerSub.hasPrefix("\(lowerClean)-") || lowerSub.hasPrefix("com.\(lowerClean)") || lowerSub.contains(".\(lowerClean).") || lowerSub.hasPrefix(".\(lowerClean)") || lowerSub.hasSuffix(".\(lowerClean)") {
+                        if subComponents.contains(lowerClean) {
                             isMatch = true
                         }
                     }
@@ -354,6 +410,11 @@ class SystemScanner {
                     if isMatch {
                         let fullPath = "\(location)/\(subItem)"
                         if fullPath == homeDir { continue }
+                        
+                        if location == homeDir && dynamicUserFolderBlacklist.contains(subItem) {
+                            continue
+                        }
+                        
                         if !associatedPaths.contains(fullPath) {
                             associatedPaths.append(fullPath)
                         }
@@ -365,7 +426,7 @@ class SystemScanner {
                 if let existingIndex = detectedApps.values.firstIndex(where: {
                     let existingLower = $0.name.lowercased()
                     let finalLower = finalName.lowercased()
-                    
+
                     return existingLower == finalLower ||
                            existingLower.hasPrefix(finalLower + ".") ||
                            finalLower.hasPrefix(existingLower + ".")
@@ -386,7 +447,7 @@ class SystemScanner {
         }
 
         func processPlist(atPath fullPlistPath: String, plistFileName: String) {
-            if isBlacklisted(plistFileName) { return }
+            if isBlacklisted(plistFileName) || isDarwinHash(plistFileName) { return }
 
             guard let plistData = fileManager.contents(atPath: fullPlistPath),
                   let dict = try? PropertyListSerialization.propertyList(from: plistData, options: [], format: nil) as? [String: Any] else {
@@ -399,8 +460,8 @@ class SystemScanner {
                 return
             }
 
-            let serviceNameLower = extractCoreName(from: plistFileName.replacingOccurrences(of: ".plist", with: ""))
-            var finalServiceName = plistFileName.replacingOccurrences(of: ".plist", with: "")
+            let serviceNameLower = extractCoreName(from: stripFileExtensions(from: plistFileName))
+            var finalServiceName = stripFileExtensions(from: plistFileName)
 
             for (appName, keywords) in knownRules {
                 if keywords.contains(serviceNameLower) {
@@ -451,8 +512,29 @@ class SystemScanner {
                 }
             }
         }
+        
+        var deduplicatedApps: [SystemApp] = []
 
-        return detectedApps.values.sorted {
+        for app in detectedApps.values {
+            let appPathsSet = Set(app.paths)
+            
+            if let existingIndex = deduplicatedApps.firstIndex(where: { Set($0.paths) == appPathsSet }) {
+                var existingApp = deduplicatedApps[existingIndex]
+                
+                if app.isKnown && !existingApp.isKnown {
+                    existingApp.name = app.name
+                    existingApp.isKnown = true
+                } else if app.isKnown == existingApp.isKnown && app.name.count < existingApp.name.count {
+                    existingApp.name = app.name
+                }
+                
+                deduplicatedApps[existingIndex] = existingApp
+            } else {
+                deduplicatedApps.append(app)
+            }
+        }
+
+        return deduplicatedApps.sorted {
             if $0.isKnown && !$1.isKnown { return true }
             if !$0.isKnown && $1.isKnown { return false }
             return $0.name.lowercased() < $1.name.lowercased()
