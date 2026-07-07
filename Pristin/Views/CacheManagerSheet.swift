@@ -68,7 +68,6 @@ struct CacheManagerSheet: View {
                             .font(.system(.body, design: .monospaced))
                             .lineLimit(1)
                             .truncationMode(.middle)
-                            .textSelection(.enabled)
                         
                         Text("Belongs to: \(item.appName)")
                             .font(.caption)

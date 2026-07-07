@@ -9,7 +9,7 @@ import Foundation
 
 struct SystemApp: Identifiable, Hashable {
     let id = UUID()
-    let name: String
+    var name: String
     let isKnown: Bool
     var paths: [String]
     

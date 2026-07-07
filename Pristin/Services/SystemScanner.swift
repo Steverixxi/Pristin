@@ -110,17 +110,38 @@ class SystemScanner {
             "/Library/PrivilegedHelperTools",
             "/Library/Application Support",
             "/Library/Caches",
-            "/Library/Logs"
+            "/Library/Logs",
+            "/Library/Extensions",
+            "/Library/Audio/Plug-Ins",
+            "/Library/Internet Plug-Ins",
+            "/Library/PreferencePanes",
+            "/Library/LaunchAgents",
+            "/Library/LaunchDaemons",
+            "/private/var/db/receipts"
         ]
 
-        let userLibraryLocations = [
+        var userLibraryLocations = [
             homeDir + "/.config",
             homeDir + "/.local",
             homeDir + "/.local/bin",
             homeDir + "/Library/Application Support",
             homeDir + "/Library/Caches",
             homeDir + "/Library/Logs",
-            homeDir + "/Library/Preferences"
+            homeDir + "/Library/Preferences",
+            homeDir + "/Library/Containers",
+            homeDir + "/Library/Group Containers",
+            homeDir + "/Library/WebKit",
+            homeDir + "/Library/Saved Application State",
+            homeDir + "/Library/HTTPStorages",
+            homeDir + "/Library/Application Support/CrashReporter",
+            homeDir + "/Library/Application Scripts",
+            homeDir + "/Library/Autosave Information",
+            homeDir + "/Library/Cookies",
+            homeDir + "/Library/Daemon Containers",
+            homeDir + "/Library/PreferencePanes",
+            homeDir + "/Library/LaunchAgents",
+            "/Library/Preferences",
+            "/Library/Managed Preferences"
         ]
 
         let appBundleRoots = [
@@ -130,6 +151,13 @@ class SystemScanner {
 
         let fileManager = FileManager.default
         var rawItemsToCluster: [String] = []
+        
+        // add dynamic temp path if available
+        let tempDir = NSTemporaryDirectory()
+        let varCacheDir = URL(fileURLWithPath: tempDir).deletingLastPathComponent().deletingLastPathComponent().path
+        if fileManager.fileExists(atPath: varCacheDir) {
+            userLibraryLocations.append(varCacheDir)
+        }
 
         let systemBlacklist = [
             "com.apple.", "System", "Managed Preferences", "Preferences", "Keychain",
@@ -172,8 +200,15 @@ class SystemScanner {
             "livefsd",
             "hidfw-crashlogs",
             "iLifeMediaBrowser",
-            "Dekstop Pictures",
-            "Apple"
+            "Desktop Pictures",
+            "Apple",
+            "loginwindow.plist",
+            "loginwindow", "ByHost", "Desktop Pictures", "Preferences",
+            "com.apple", "CloudStorage", "Mobile Documents",
+            "QuickLook", "Saved Application State", "WebKit", "HTTPStorages",
+            "ScreenSharing", "Bluetooth", "Audio", "Input Methods", "Keychains",
+            "LanguageModeling", "PersonalizationPortrait", "Metadata",
+            "Spelling", "TCC", "Autosave Information"
         ]
 
         func isBlacklisted(_ name: String) -> Bool {
@@ -196,26 +231,46 @@ class SystemScanner {
             return lower.components(separatedBy: ".").first ?? lower
         }
 
+        let structuralFolders = ["bin", "share", "lib", "libexec"]
+
+        // Hilfsfunktion, um Code-Doppelung zu vermeiden
+        func addItemOrResolveStructural(_ item: String, in location: String) {
+            if isBlacklisted(item) { return }
+            
+            if structuralFolders.contains(item.lowercased()) {
+                let subLocation = "\(location)/\(item)"
+                if let subItems = try? fileManager.contentsOfDirectory(atPath: subLocation) {
+                    for subItem in subItems {
+                        if !isBlacklisted(subItem) && !rawItemsToCluster.contains(subItem) {
+                            rawItemsToCluster.append(subItem)
+                        }
+                    }
+                }
+            } else {
+                if !rawItemsToCluster.contains(item) {
+                    rawItemsToCluster.append(item)
+                }
+            }
+        }
+
         for location in unixLocations {
             guard let items = try? fileManager.contentsOfDirectory(atPath: location) else { continue }
             for item in items {
-                if isBlacklisted(item) { continue }
                 if item.hasPrefix(".") && !item.hasPrefix(".config") { continue }
-
+                
                 let fullPath = "\(location)/\(item)"
                 var isDir: ObjCBool = false
                 fileManager.fileExists(atPath: fullPath, isDirectory: &isDir)
                 if !isDir.boolValue && isAppleSigned(path: fullPath) { continue }
-
-                if !rawItemsToCluster.contains(item) { rawItemsToCluster.append(item) }
+                
+                addItemOrResolveStructural(item, in: location)
             }
         }
 
         for location in userLibraryLocations {
             guard let items = try? fileManager.contentsOfDirectory(atPath: location) else { continue }
             for item in items {
-                if isBlacklisted(item) { continue }
-                if !rawItemsToCluster.contains(item) { rawItemsToCluster.append(item) }
+                addItemOrResolveStructural(item, in: location)
             }
         }
 
@@ -224,9 +279,11 @@ class SystemScanner {
                 if item.hasPrefix(".") {
                     let cleanDot = item.replacingOccurrences(of: ".", with: "")
                     if isBlacklisted(cleanDot) { continue }
-                    if cleanDot.count >= 3 && !rawItemsToCluster.contains(item) {
-                        rawItemsToCluster.append(item)
+                    if cleanDot.count >= 3 {
+                        addItemOrResolveStructural(item, in: homeDir)
                     }
+                } else {
+                    addItemOrResolveStructural(item, in: homeDir)
                 }
             }
         }
@@ -305,9 +362,19 @@ class SystemScanner {
             }
 
             if !associatedPaths.isEmpty {
-                if let existingIndex = detectedApps.values.firstIndex(where: { $0.name.lowercased() == finalName.lowercased() }) {
+                if let existingIndex = detectedApps.values.firstIndex(where: {
+                    let existingLower = $0.name.lowercased()
+                    let finalLower = finalName.lowercased()
+                    
+                    return existingLower == finalLower ||
+                           existingLower.hasPrefix(finalLower + ".") ||
+                           finalLower.hasPrefix(existingLower + ".")
+                }) {
                     let id = detectedApps.values[existingIndex].id
                     if var existingApp = detectedApps[id] {
+                        if finalName.count < existingApp.name.count {
+                            existingApp.name = finalName
+                        }
                         existingApp.paths = Array(Set(existingApp.paths + associatedPaths))
                         detectedApps[id] = existingApp
                     }

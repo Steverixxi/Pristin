@@ -51,9 +51,7 @@ struct DetailView: View {
                     Text(path)
                         .font(.system(.body, design: .monospaced))
                         .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                    
+                        .truncationMode(.middle)                    
                     Spacer()
                 }
                 .padding(.vertical, 2)
