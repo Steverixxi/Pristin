@@ -52,6 +52,13 @@ struct WelcomeScreen: View {
                             title: "Daemon & Launch Detection",
                             description: "Exposes lingering background services and operational fragments of uninstalled apps."
                         )
+                        
+                        FeatureRow(
+                            icon: "bolt.shield",
+                            color: .green,
+                            title: "Express Cache Purge",
+                            description: "Instantly flushes volatile system caches and user-space buffers to reclaim active memory and disk space."
+                        )
                     }
                     .frame(maxWidth: 460)
                 }
@@ -81,7 +88,7 @@ struct WelcomeScreen: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(NSColor.underPageBackgroundColor))
+        .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
             if hasSeenWelcomeScreen {
                 doNotShowAgain = true
