@@ -25,7 +25,7 @@ Pristin is built utilizing native SwiftUI frameworks and modern macOS architectu
 | macOS Version | Codename | Compatibility Status | Notes |
 | :--- | :--- | :--- | :--- |
 | macOS 26 | **Tahoe** | 🟢 Fully Supported |  |
-| macOS 16 | **Sequoia** | 🟢 Fully Supported |  |
+| macOS 15 | **Sequoia** | 🟢 Fully Supported |  |
 
 ---
 
