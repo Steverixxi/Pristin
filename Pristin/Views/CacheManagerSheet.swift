@@ -1,8 +1,11 @@
 //
-//  CacheManager.swift
-//  Pristin
+//  Copyright (c) 2026 Stefan Werner. All rights reserved.
 //
-//  Created by Stefan on 05.07.26.
+//  This software is provided for PERSONAL, NON-COMMERCIAL USE ONLY.
+//  No redistribution, forks, or derivative works are permitted.
+//
+//  See the LICENSE file in the root directory of this repository
+//  for the full terms and conditions.
 //
 
 import SwiftUI
@@ -13,6 +16,9 @@ struct CacheManagerSheet: View {
     
     @State private var sheetSearchString = ""
     @State private var showBulkDeleteConfirmation = false
+    
+    @State private var failedPaths: [String] = []
+    @State private var showFailureAlert = false
     
     var allCachePaths: [(appName: String, path: String)] {
         var caches: [(appName: String, path: String)] = []
@@ -92,7 +98,7 @@ struct CacheManagerSheet: View {
                 Button(role: .destructive) {
                     showBulkDeleteConfirmation = true
                 } label: {
-                    Label("Delete All Caches (\(allCachePaths.count))", systemImage: "trash")
+                    Label("Trash All Caches (\(allCachePaths.count))", systemImage: "trash")
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(allCachePaths.isEmpty)
@@ -102,16 +108,60 @@ struct CacheManagerSheet: View {
         }
         .frame(minWidth: 650, minHeight: 450)
         .confirmationDialog(
-            "Are you sure you want to delete all found caches?",
+            "Are you sure you want to move all found caches to the Trash?",
             isPresented: $showBulkDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete Permanently", role: .destructive) {
-                dismiss()
+            Button("Move to Trash", role: .destructive) {
+                moveCachesToTrash()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will clear \(allCachePaths.count) cache directories. Performance of some tools may temporarily degrade while rebuilding indexes.")
+            Text("This will move \(allCachePaths.count) cache directories to the Trash. Performance of some tools may temporarily degrade while rebuilding indexes.")
         }
+        .alert(
+            "Some caches could not be moved to the Trash",
+            isPresented: $showFailureAlert,
+            presenting: failedPaths
+        ) { failed in
+            Button("Reveal in Finder") {
+                revealInFinder(paths: failed)
+            }
+            Button("OK", role: .cancel) {}
+        } message: { failed in
+            let limit = 5
+            let displayedPaths = failed.prefix(limit).joined(separator: "\n")
+            let moreText = failed.count > limit ? "\n... and \(failed.count - limit) more" : ""
+            Text("Likely due to missing permissions, the following items failed:\n\n\(displayedPaths)\(moreText)")
+        }
+    }
+        
+    private func moveCachesToTrash() {
+        var failures: [String] = []
+        let fileManager = FileManager.default
+        
+        for item in allCachePaths {
+            let url = URL(fileURLWithPath: item.path)
+            guard fileManager.fileExists(atPath: item.path) else { continue }
+            
+            do {
+                try fileManager.trashItem(at: url, resultingItemURL: nil)
+            } catch {
+                failures.append(item.path)
+                print("Failed to trash cache \(item.path): \(error.localizedDescription)")
+            }
+        }
+        
+        if !failures.isEmpty {
+            self.failedPaths = failures
+            self.showFailureAlert = true
+        } else {
+            dismiss()
+        }
+    }
+    
+    private func revealInFinder(paths: [String]) {
+        let urls = paths.map { URL(fileURLWithPath: $0) }
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 }

@@ -1,3 +1,13 @@
+//
+//  Copyright (c) 2026 Stefan Werner. All rights reserved.
+//
+//  This software is provided for PERSONAL, NON-COMMERCIAL USE ONLY.
+//  No redistribution, forks, or derivative works are permitted.
+//
+//  See the LICENSE file in the root directory of this repository
+//  for the full terms and conditions.
+//
+
 import Foundation
 import Security
 
@@ -58,6 +68,35 @@ class SystemScanner {
         return cleaned
     }
 
+    static func isAppleSkeletonFolder(atPath path: String) -> Bool {
+        let url = URL(fileURLWithPath: path)
+        let name = url.lastPathComponent.lowercased()
+        
+        let targetFolders = ["mozilla", "google", "microsoft edge", "firefox", "chrome"]
+        guard targetFolders.contains(name) else { return false }
+        
+        let fileManager = FileManager.default
+        guard let enumerator = fileManager.enumerator(atPath: path) else { return false }
+        
+        var hasAppleProtectedFile = false
+        var hasRealUserData = false
+        
+        for case let subPath as String in enumerator {
+            let lowerSubPath = subPath.lowercased()
+            
+            if lowerSubPath.contains(".ds_store") { continue }
+            
+            if lowerSubPath.hasSuffix("com.apple.passwordmanager.json") || lowerSubPath.hasSuffix("com.apple.bookmarks.json") {
+                hasAppleProtectedFile = true
+            } else if !lowerSubPath.hasPrefix("nativemessaginghosts") {
+                hasRealUserData = true
+                break
+            }
+        }
+        
+        return hasAppleProtectedFile && !hasRealUserData
+    }
+
     static func scanComprehensiveSystem() -> [SystemApp] {
         var detectedApps: [UUID: SystemApp] = [:]
 
@@ -79,7 +118,7 @@ class SystemScanner {
             "Unity 3D": [
                 "unity", "unity3d", "unityhub", "unityeditor", "unityeditor5", "plastic4", "unityhub-updater"
             ],
-            "Xcode & Apple Dev": ["xcode", "coresimulator", "proapps", "script editor"],
+            "Xcode & Apple Dev": ["xcode", "coresimulator", "proapps_removed", "script_editor_removed"],
 
             "Homebrew": ["brew", "Cellar", "Caskroom", "homebrew"],
             "CocoaPods": ["pod", "pods", ".cocoapods"],
@@ -102,7 +141,6 @@ class SystemScanner {
 
             "DisplayLink": ["displaylink", "displaylinkmanager", "displaylinkuseragent"],
             "Google Chrome / Services": ["google", "chrome", "keystone"],
-            "Mozilla": ["mozilla", "firefox"],
             "Discord": ["discord", "discordptb", "discordcanary"],
             "Spotify": ["spotify", "spotifyd"],
             "AlDente": ["aldente", "aldentepro", "apphousekitchen"],
@@ -195,13 +233,15 @@ class SystemScanner {
             "ScreenSharing", "Bluetooth", "Audio", "Input Methods", "Keychains", "LanguageModeling", "PersonalizationPortrait",
             "Metadata", "Spelling", "TCC", "Autosave Information",
             
-            // System-Strukturdateien und Native Apple-Dienste
             ".GlobalPreferences", "AMSDataMigratorTool", "Components", "ContextStoreAgent", "Databases",
             "default.store", "default.store-wal", "default.store-shm", "DirectoryService", "DiscRecording",
             "group.tvappservices.container", "HAL", "Logging", "MAS", "MCXTools", "MobileMeAccounts", "Music",
             "OpenDirectory", "org.cups.printers", "pbs", "PhotosSearch", "PhotosUpgrade", "sharedfilelistd", "Sync",
             "SystemConfiguration", "TokenBucketRateLimiter", "AOSUI", "MiniLauncher", "HighPointRR", "HighPointIOP",
-            "group.is.workflow.my.app", "group.is.workflow.shortcuts", ".zshrc", "zshrc"
+            "group.is.workflow.my.app", "group.is.workflow.shortcuts", ".zshrc", "zshrc",
+            
+            "localizationswitcherd", "IntelligenceFlow", "FeatureFlags", "CommCenter", "AskPermission", "AutoBugCapture",
+            "ProApps", "Script Editor"
         ]
 
         let genericCoreWords: Set<String> = [
@@ -272,6 +312,15 @@ class SystemScanner {
         let structuralFolders = ["bin", "share", "lib", "libexec", "vst", "vst3", "components", "audio", "plug-ins"]
 
         func addItemOrResolveStructural(_ item: String, in location: String) {
+            let fullPath = "\(location)/\(item)"
+            
+            var isDir: ObjCBool = false
+            if fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue {
+                if SystemScanner.isAppleSkeletonFolder(atPath: fullPath) {
+                    return
+                }
+            }
+            
             if isBlacklisted(item) || isDarwinHash(item) { return }
 
             if isUUID(item) {
@@ -413,6 +462,13 @@ class SystemScanner {
                         
                         if location == homeDir && dynamicUserFolderBlacklist.contains(subItem) {
                             continue
+                        }
+                        
+                        var isDir: ObjCBool = false
+                        if fileManager.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue {
+                            if SystemScanner.isAppleSkeletonFolder(atPath: fullPath) {
+                                continue
+                            }
                         }
                         
                         if !associatedPaths.contains(fullPath) {

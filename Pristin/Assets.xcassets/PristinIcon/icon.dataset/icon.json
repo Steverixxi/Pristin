@@ -1,0 +1,133 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:0.37216,0.50197,1.00000,1.00000",
+      "srgb:0.00000,0.23132,0.43783,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 0
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.7
+      }
+    }
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "untitled-2.png",
+          "name" : "untitled-2",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              285.9220123286914,
+              -204.43134727950155
+            ]
+          }
+        },
+        {
+          "image-name" : "untitled-2.png",
+          "name" : "untitled-2",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              285.9220123286914,
+              325.43134727950155
+            ]
+          }
+        },
+        {
+          "image-name" : "untitled-2.png",
+          "name" : "untitled-2",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -274.0779876713086,
+              325.43134727950155
+            ]
+          }
+        },
+        {
+          "image-name" : "untitled-2.png",
+          "name" : "untitled-2",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -274.0779876713086,
+              -204.43134727950155
+            ]
+          }
+        },
+        {
+          "blend-mode" : "normal",
+          "fill-specializations" : [
+            {
+              "value" : {
+                "linear-gradient" : [
+                  "srgb:0.79647,1.00000,0.93164,1.00000",
+                  "srgb:0.00000,0.28292,1.00000,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.86088217328852
+                  }
+                }
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "linear-gradient" : [
+                  "srgb:0.79647,1.00000,0.93164,1.00000",
+                  "extended-gray:0.00000,1.00000"
+                ],
+                "orientation" : {
+                  "start" : {
+                    "x" : 0.5,
+                    "y" : 0
+                  },
+                  "stop" : {
+                    "x" : 0.5,
+                    "y" : 0.86088217328852
+                  }
+                }
+              }
+            }
+          ],
+          "image-name" : "untitled 2.png",
+          "name" : "untitled 2",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              80.42201232869138,
+              -14.931347279501551
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

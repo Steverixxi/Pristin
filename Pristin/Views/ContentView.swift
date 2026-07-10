@@ -1,3 +1,13 @@
+//
+//  Copyright (c) 2026 Stefan Werner. All rights reserved.
+//
+//  This software is provided for PERSONAL, NON-COMMERCIAL USE ONLY.
+//  No redistribution, forks, or derivative works are permitted.
+//
+//  See the LICENSE file in the root directory of this repository
+//  for the full terms and conditions.
+//
+
 import SwiftUI
 
 struct ContentView: View {
@@ -172,10 +182,13 @@ struct DisclaimerSheet: View {
                     HStack(alignment: .top, spacing: 6) {
                         Text("•").fontWeight(.bold)
                         Text("You are strictly required to manually inspect and verify all reported paths and structures before executing a permanent removal.")
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+                    
                     HStack(alignment: .top, spacing: 6) {
                         Text("•").fontWeight(.bold)
                         Text("The developer assumes absolutely no liability for data loss, operational downtime, or system instability caused by using this software.")
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .font(.subheadline)

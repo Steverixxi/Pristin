@@ -1,8 +1,11 @@
 //
-//  DetailView.swift
-//  Pristin
+//  Copyright (c) 2026 Stefan Werner. All rights reserved.
 //
-//  Created by Stefan on 05.07.26.
+//  This software is provided for PERSONAL, NON-COMMERCIAL USE ONLY.
+//  No redistribution, forks, or derivative works are permitted.
+//
+//  See the LICENSE file in the root directory of this repository
+//  for the full terms and conditions.
 //
 
 import SwiftUI
@@ -10,6 +13,9 @@ import SwiftUI
 struct DetailView: View {
     let app: SystemApp
     @State private var showDeleteConfirmation = false
+    
+    @State private var failedPaths: [String] = []
+    @State private var showFailureAlert = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -29,7 +35,7 @@ struct DetailView: View {
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
                 } label: {
-                    Label("Remove All", systemImage: "trash")
+                    Label("Move to Trash", systemImage: "trash")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
@@ -51,7 +57,7 @@ struct DetailView: View {
                     Text(path)
                         .font(.system(.body, design: .monospaced))
                         .lineLimit(1)
-                        .truncationMode(.middle)                    
+                        .truncationMode(.middle)
                     Spacer()
                 }
                 .padding(.vertical, 2)
@@ -69,14 +75,61 @@ struct DetailView: View {
             .listStyle(.inset(alternatesRowBackgrounds: true))
         }
         .confirmationDialog(
-            "Do you want to permanently delete all files for '\(app.name)'?",
+            "Do you want to move all files for '\(app.name)' to the Trash?",
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete Permanently", role: .destructive) {}
+            Button("Move to Trash", role: .destructive) {
+                moveToTrash()
+            }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("This action cannot be undone. System daemons might require a restart afterwards.")
+            Text("Files will be moved to the Trash. System daemons might require a restart afterwards.")
         }
+        .alert(
+            "Some files could not be moved to the Trash",
+            isPresented: $showFailureAlert,
+            presenting: failedPaths
+        ) { failed in
+            Button("Reveal in Finder") {
+                revealInFinder(paths: failed)
+            }
+            Button("OK", role: .cancel) {}
+        } message: { failed in
+            let limit = 5
+            let displayedPaths = failed.prefix(limit).joined(separator: "\n")
+            let moreText = failed.count > limit ? "\n... and \(failed.count - limit) more" : ""
+            Text("Likely due to missing permissions, the following files failed:\n\n\(displayedPaths)\(moreText)")
+        }
+    }
+    
+    
+    private func moveToTrash() {
+        var failures: [String] = []
+        let fileManager = FileManager.default
+        
+        for path in app.paths {
+            let url = URL(fileURLWithPath: path)
+            guard fileManager.fileExists(atPath: path) else { continue }
+            
+            do {
+                try fileManager.trashItem(at: url, resultingItemURL: nil)
+            } catch {
+                failures.append(path)
+                print("Failed to trash \(path): \(error.localizedDescription)")
+            }
+        }
+        
+        if !failures.isEmpty {
+            self.failedPaths = failures
+            self.showFailureAlert = true
+        } else {
+           // if ok
+        }
+    }
+    
+    private func revealInFinder(paths: [String]) {
+        let urls = paths.map { URL(fileURLWithPath: $0) }
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 }
